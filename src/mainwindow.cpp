@@ -7,6 +7,30 @@
 #include <QGraphicsLineItem>
 #include <QPen>
 #include <QBrush>
+#include <QRandomGenerator>
+
+// VertexItem implementation
+VertexItem::VertexItem(int id, qreal x, qreal y, QGraphicsItem* parent)
+    : QGraphicsEllipseItem(x, y, 30, 30, parent), vertexId(id)
+{
+    setPen(QPen(Qt::black, 2));
+    setBrush(QBrush(Qt::lightGray));
+    setFlag(QGraphicsItem::ItemIsMovable, true);
+    setFlag(QGraphicsItem::ItemSendsGeometryChanges, true);
+}
+
+QVariant VertexItem::itemChange(GraphicsItemChange change, const QVariant &value) {
+    if (change == ItemPositionHasChanged) {
+        // Notify parent window to update edge positions
+        if (scene()) {
+            MainWindow* mw = qobject_cast<MainWindow*>(scene()->parent());
+            if (mw) {
+                mw->updateGraphFromVertex();
+            }
+        }
+    }
+    return QGraphicsEllipseItem::itemChange(change, value);
+}
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -31,10 +55,15 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::drawGraph() {
-    // Clear existing items
-    scene->clear();
-    vertexItems.clear();
-    labelItems.clear();
+    // Clear only edges and labels, keep vertices at their current positions
+    for (QGraphicsLineItem* line : edgeItems) {
+        scene->removeItem(line);
+        delete line;
+    }
+    for (QGraphicsTextItem* label : edgeLabelItems) {
+        scene->removeItem(label);
+        delete label;
+    }
     edgeItems.clear();
     edgeLabelItems.clear();
     
@@ -49,8 +78,8 @@ void MainWindow::drawGraph() {
             // Only draw each edge once (for undirected graphs)
             if (from < to || !graph.hasEdge(to, from)) {
                 // Get positions
-                QGraphicsEllipseItem* fromItem = vertexItems.value(from, nullptr);
-                QGraphicsEllipseItem* toItem = vertexItems.value(to, nullptr);
+                VertexItem* fromItem = vertexItems.value(from, nullptr);
+                VertexItem* toItem = vertexItems.value(to, nullptr);
                 
                 if (fromItem && toItem) {
                     qreal x1 = fromItem->x() + 15;
@@ -62,35 +91,22 @@ void MainWindow::drawGraph() {
                     QGraphicsLineItem* line = scene->addLine(x1, y1, x2, y2, QPen(Qt::black, 2));
                     edgeItems.append(line);
                     
-                    // Draw weight label
+                    // Draw weight label in the middle of the edge
                     QGraphicsTextItem* weightLabel = scene->addText(QString::number(weight));
                     weightLabel->setPos((x1 + x2) / 2 - 10, (y1 + y2) / 2 - 10);
+                    weightLabel->setZValue(1); // Ensure label is above the line
                     edgeLabelItems.append(weightLabel);
                 }
             }
         }
     }
-    
-    // Draw vertices
-    for (int vertexId : vertices) {
-        // Random-like position based on vertex ID
-        int index = vertexItems.size();
-        qreal x = 50 + (index % 8) * 70;
-        qreal y = 50 + (index / 8) * 80;
-        
-        // Create vertex circle
-        QGraphicsEllipseItem* ellipse = scene->addEllipse(x, y, 30, 30, 
-            QPen(Qt::black, 2), QBrush(Qt::lightGray));
-        vertexItems[vertexId] = ellipse;
-        
-        // Create label
-        QGraphicsTextItem* text = scene->addText(QString::number(vertexId));
-        text->setPos(x + 10, y + 7);
-        labelItems[vertexId] = text;
-    }
 }
 
 void MainWindow::updateGraphDisplay() {
+    drawGraph();
+}
+
+void MainWindow::updateGraphFromVertex() {
     drawGraph();
 }
 
@@ -107,6 +123,22 @@ void MainWindow::on_addVertexButton_clicked() {
             return;
         }
         graph.addVertex(vertexId, label);
+        
+        // Create vertex at random position
+        int index = vertexItems.size();
+        qreal x = 50 + (index % 6) * 90 + QRandomGenerator::global()->bounded(20);
+        qreal y = 50 + (index / 6) * 70 + QRandomGenerator::global()->bounded(20);
+        
+        // Create vertex circle (movable)
+        VertexItem* ellipse = new VertexItem(vertexId, x, y);
+        scene->addItem(ellipse);
+        vertexItems[vertexId] = ellipse;
+        
+        // Create label
+        QGraphicsTextItem* text = scene->addText(QString::number(vertexId));
+        text->setPos(x + 10, y + 7);
+        labelItems[vertexId] = text;
+        
         updateGraphDisplay();
         nextVertexId++;
     }
@@ -286,7 +318,31 @@ void MainWindow::on_floydButton_clicked() {
 
 void MainWindow::on_clearButton_clicked() {
     graph.clear();
-    scene->clear();
+    
+    // Delete all vertex items
+    for (VertexItem* item : vertexItems) {
+        scene->removeItem(item);
+        delete item;
+    }
+    
+    // Delete all label items
+    for (QGraphicsTextItem* item : labelItems) {
+        scene->removeItem(item);
+        delete item;
+    }
+    
+    // Delete all edge items
+    for (QGraphicsLineItem* line : edgeItems) {
+        scene->removeItem(line);
+        delete line;
+    }
+    
+    // Delete all edge label items
+    for (QGraphicsTextItem* label : edgeLabelItems) {
+        scene->removeItem(label);
+        delete label;
+    }
+    
     vertexItems.clear();
     labelItems.clear();
     edgeItems.clear();

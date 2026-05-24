@@ -53,3 +53,14 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 install(TARGETS ${PROJECT_NAME}
     BUNDLE DESTINATION .
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+# Windows: Automatically copy Qt DLLs after build
+if(WIN32)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND set PATH=%PATH%$<SEMICOLON>$<TARGET_FILE_DIR:Qt${QT_VERSION_MAJOR}::Core>/../bin
+        COMMAND $<TARGET_FILE_DIR:Qt${QT_VERSION_MAJOR}::Widgets>/../bin/windeployqt.exe 
+                --qmldir ${CMAKE_SOURCE_DIR} 
+                $<TARGET_FILE:${PROJECT_NAME}>
+        COMMENT "Deploying Qt libraries..."
+    )
+endif()
