@@ -24,19 +24,23 @@ VertexItem::VertexItem(int id, qreal x, qreal y, QGraphicsItem* parent)
     labelItem->setDefaultTextColor(Qt::black);
     
     // Center the text in the circle (circle is 30x30, so center is at 15,15)
-    // Adjust for text bounding box
+    // Adjust for text bounding box - calculate AFTER setting the text
     QFont font = labelItem->font();
     font.setPointSize(12);
     font.setBold(true);
     labelItem->setFont(font);
+    
+    // Force update of bounding rect by calling documentSize or similar
+    labelItem->document()->markContentsDirty(0, labelItem->document()->characterCount());
     
     QRectF textRect = labelItem->boundingRect();
     qreal textWidth = textRect.width();
     qreal textHeight = textRect.height();
     
     // Position text so its center aligns with circle center (15, 15)
-    labelItem->setPos(15 - textWidth / 2.0, 15 - textHeight / 2.0);
-    labelItem->setFlag(QGraphicsItem::ItemIgnoresTransformations, false);
+    // Use setPos with calculated offset to center it
+    labelItem->setPos(15.0 - textWidth / 2.0, 15.0 - textHeight / 2.0);
+    labelItem->setFlag(QGraphicsItem::ItemIgnoresParentOpacity, false);
 }
 
 int VertexItem::getId() const {
