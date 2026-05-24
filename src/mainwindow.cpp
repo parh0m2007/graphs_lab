@@ -11,8 +11,11 @@
 
 // VertexItem implementation
 VertexItem::VertexItem(int id, qreal x, qreal y, QGraphicsItem* parent)
-    : QGraphicsEllipseItem(x, y, 30, 30, parent), vertexId(id)
+    : QGraphicsEllipseItem(0, 0, 30, 30, parent), vertexId(id)
 {
+    // Set the position of the entire item
+    setPos(x, y);
+    
     setPen(QPen(Qt::black, 2));
     setBrush(QBrush(Qt::lightGray));
     setFlag(QGraphicsItem::ItemIsMovable, true);
@@ -39,7 +42,7 @@ VertexItem::VertexItem(int id, qreal x, qreal y, QGraphicsItem* parent)
     
     // Position text so its center aligns with circle center (15, 15)
     // Use setPos with calculated offset to center it
-    labelItem->setPos(15.0 - textWidth / 2.0, 15.0 - textHeight / 2.0);
+    labelItem->setPos((30.0 - textWidth) / 2.0, (30.0 - textHeight) / 2.0);
     labelItem->setFlag(QGraphicsItem::ItemIgnoresParentOpacity, false);
 }
 
