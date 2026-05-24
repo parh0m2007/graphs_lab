@@ -111,13 +111,128 @@ GraphLab.exe
 
 ## Технические детали
 
-### Класс Graph
-Класс `Graph` реализует структуру графа с использованием списка смежности и содержит методы для:
-- Добавления/удаления вершин и рёбер
-- Обхода в ширину (BFS)
-- Обхода в глубину (DFS)
-- Алгоритма Дейкстры
-- Алгоритма Флойда-Уоршелла
+### UML-диаграмма классов
+
+```mermaid
+classDiagram
+    class Graph {
+        -adjacencyList: map<int, vector<pair<int, int>>>
+        -vertexLabels: map<int, QString>
+        -vertices: vector<int>
+        +Graph()
+        +addVertex(id: int, label: QString) void
+        +addEdge(from: int, to: int, weight: int, directed: bool) void
+        +removeVertex(id: int) void
+        +removeEdge(from: int, to: int) void
+        +getVerticesCount() int
+        +getEdgesCount() int
+        +hasVertex(id: int) bool
+        +hasEdge(from: int, to: int) bool
+        +getAllVertices() vector<int>
+        +getNeighbors(vertexId: int) vector<pair<int, int>>
+        +bfs(startVertex: int) vector<int>
+        +dfs(startVertex: int) vector<int>
+        +dijkstra(startVertex: int) map<int, int>
+        +floydWarshall() vector<vector<int>>
+        +clear() void
+        -dfsHelper(vertex: int, result: vector<int>&, visited: vector<bool>&) void
+    }
+
+    class VertexItem {
+        -vertexId: int
+        -labelItem: QGraphicsTextItem*
+        +VertexItem(id: int, x: qreal, y: qreal, parent: QGraphicsItem*)
+        +getId() int
+        +setLabelVisible(visible: bool) void
+        #itemChange(change: GraphicsItemChange, value: QVariant) QVariant
+    }
+
+    class MainWindow {
+        -ui: Ui::MainWindow*
+        -graph: Graph
+        -scene: QGraphicsScene*
+        -vertexItems: QMap<int, VertexItem*>
+        -edgeItems: QList<QGraphicsLineItem*>
+        -edgeLabelItems: QList<QGraphicsTextItem*>
+        -nextVertexId: int
+        +MainWindow(parent: QWidget*)
+        +~MainWindow()
+        +updateGraphFromVertex() void
+        -on_addVertexButton_clicked() void
+        -on_addEdgeButton_clicked() void
+        -on_removeVertexButton_clicked() void
+        -on_removeEdgeButton_clicked() void
+        -on_bfsButton_clicked() void
+        -on_dfsButton_clicked() void
+        -on_dijkstraButton_clicked() void
+        -on_floydButton_clicked() void
+        -on_clearButton_clicked() void
+        -on_startVertexSpinBox_valueChanged(int) void
+        -on_endVertexSpinBox_valueChanged(int) void
+        -updateGraphDisplay() void
+        -drawGraph() void
+        -highlightPath(path: vector<int>&, algorithmName: QString) void
+        -showDistances(distances: map<int, int>&, algorithmName: QString) void
+        -showFloydMatrix(matrix: vector<vector<int>>&) void
+    }
+
+    Graph --> MainWindow : содержит
+    VertexItem --> MainWindow : отображает вершины
+```
+
+### Разъяснение реализованных классов
+
+#### 1. Класс `Graph`
+**Назначение:** Базовый класс для представления и работы с графами. Реализует структуру данных графа и основные алгоритмы обхода.
+
+**Поля:**
+- `adjacencyList` — список смежности для хранения структуры графа (вершина → список пар {сосед, вес})
+- `vertexLabels` — карта меток вершин для отображения пользовательских названий
+- `vertices` — вектор всех вершин графа
+
+**Основные методы:**
+- **Манипуляция графом:** `addVertex()`, `addEdge()`, `removeVertex()`, `removeEdge()`, `clear()`
+- **Информационные методы:** `getVerticesCount()`, `getEdgesCount()`, `hasVertex()`, `hasEdge()`, `getAllVertices()`, `getNeighbors()`
+- **Алгоритмы обхода:**
+  - `bfs()` — обход в ширину (Breadth-First Search)
+  - `dfs()` — обход в глубину (Depth-First Search)
+  - `dijkstra()` — алгоритм Дейкстры для поиска кратчайших путей
+  - `floydWarshall()` — алгоритм Флойда-Уоршелла для всех пар кратчайших путей
+- `dfsHelper()` — вспомогательный рекурсивный метод для DFS
+
+#### 2. Класс `VertexItem`
+**Назначение:** Графическое представление вершины графа на сцене Qt. Наследуется от `QGraphicsEllipseItem`.
+
+**Поля:**
+- `vertexId` — идентификатор вершины в графе
+- `labelItem` — текстовый элемент для отображения метки вершины
+
+**Основные методы:**
+- `getId()` — возвращает идентификатор вершины
+- `setLabelVisible()` — показывает/скрывает метку вершины
+- `itemChange()` — переопределённый метод для отслеживания изменений позиции вершины
+
+#### 3. Класс `MainWindow`
+**Назначение:** Главное окно приложения, обеспечивающее графический интерфейс пользователя и связывающее UI с логикой графа.
+
+**Поля:**
+- `ui` — указатель на автоматически сгенерированный UI-класс
+- `graph` — экземпляр класса `Graph` для хранения данных
+- `scene` — графическая сцена Qt для отображения графа
+- `vertexItems` — карта графических элементов вершин
+- `edgeItems` — список графических элементов рёбер
+- `edgeLabelItems` — список элементов меток рёбер
+- `nextVertexId` — счётчик для автоматической нумерации вершин
+
+**Основные методы:**
+- **Слоты обработки событий UI:** `on_addVertexButton_clicked()`, `on_addEdgeButton_clicked()`, `on_removeVertexButton_clicked()`, `on_removeEdgeButton_clicked()`, `on_bfsButton_clicked()`, `on_dfsButton_clicked()`, `on_dijkstraButton_clicked()`, `on_floydButton_clicked()`, `on_clearButton_clicked()`
+- **Методы обновления отображения:** `updateGraphDisplay()`, `drawGraph()`, `highlightPath()`, `showDistances()`, `showFloydMatrix()`
+- `updateGraphFromVertex()` — публичный метод для синхронизации данных
+
+### Взаимосвязь классов
+- `MainWindow` **содержит** экземпляр `Graph` (композиция)
+- `MainWindow` **управляет** коллекцией объектов `VertexItem` для визуализации
+- `VertexItem` **отображает** отдельную вершину графа на сцене
 
 ### Графический интерфейс
 Интерфейс создан с использованием Qt Widgets и включает:
