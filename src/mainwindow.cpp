@@ -22,7 +22,20 @@ VertexItem::VertexItem(int id, qreal x, qreal y, QGraphicsItem* parent)
     labelItem = new QGraphicsTextItem(this);
     labelItem->setPlainText(QString::number(id));
     labelItem->setDefaultTextColor(Qt::black);
-    labelItem->setPos(10, 7); // Position relative to the circle
+    
+    // Center the text in the circle (circle is 30x30, so center is at 15,15)
+    // Adjust for text bounding box
+    QFont font = labelItem->font();
+    font.setPointSize(12);
+    font.setBold(true);
+    labelItem->setFont(font);
+    
+    QRectF textRect = labelItem->boundingRect();
+    qreal textWidth = textRect.width();
+    qreal textHeight = textRect.height();
+    
+    // Position text so its center aligns with circle center (15, 15)
+    labelItem->setPos(15 - textWidth / 2.0, 15 - textHeight / 2.0);
     labelItem->setFlag(QGraphicsItem::ItemIgnoresTransformations, false);
 }
 
