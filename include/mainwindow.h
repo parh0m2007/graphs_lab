@@ -16,13 +16,15 @@ QT_END_NAMESPACE
 class VertexItem : public QGraphicsEllipseItem {
 public:
     VertexItem(int id, qreal x, qreal y, QGraphicsItem* parent = nullptr);
-    int getId() const { return vertexId; }
+    int getId() const;
+    void setLabelVisible(bool visible);
     
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
     
 private:
     int vertexId;
+    QGraphicsTextItem* labelItem;
 };
 
 class MainWindow : public QMainWindow {
@@ -50,7 +52,6 @@ private:
     Graph graph;
     QGraphicsScene *scene;
     QMap<int, VertexItem*> vertexItems;
-    QMap<int, QGraphicsTextItem*> labelItems;
     QList<QGraphicsLineItem*> edgeItems;
     QList<QGraphicsTextItem*> edgeLabelItems;
     
