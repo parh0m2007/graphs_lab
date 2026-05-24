@@ -17,6 +17,23 @@ VertexItem::VertexItem(int id, qreal x, qreal y, QGraphicsItem* parent)
     setBrush(QBrush(Qt::lightGray));
     setFlag(QGraphicsItem::ItemIsMovable, true);
     setFlag(QGraphicsItem::ItemSendsGeometryChanges, true);
+    
+    // Create label as child item so it moves with the vertex
+    labelItem = new QGraphicsTextItem(this);
+    labelItem->setPlainText(QString::number(id));
+    labelItem->setDefaultTextColor(Qt::black);
+    labelItem->setPos(10, 7); // Position relative to the circle
+    labelItem->setFlag(QGraphicsItem::ItemIgnoresTransformations, false);
+}
+
+int VertexItem::getId() const {
+    return vertexId;
+}
+
+void VertexItem::setLabelVisible(bool visible) {
+    if (labelItem) {
+        labelItem->setVisible(visible);
+    }
 }
 
 QVariant VertexItem::itemChange(GraphicsItemChange change, const QVariant &value) {
@@ -129,15 +146,10 @@ void MainWindow::on_addVertexButton_clicked() {
         qreal x = 50 + (index % 6) * 90 + QRandomGenerator::global()->bounded(20);
         qreal y = 50 + (index / 6) * 70 + QRandomGenerator::global()->bounded(20);
         
-        // Create vertex circle (movable)
+        // Create vertex circle (movable) - label is now created inside VertexItem constructor
         VertexItem* ellipse = new VertexItem(vertexId, x, y);
         scene->addItem(ellipse);
         vertexItems[vertexId] = ellipse;
-        
-        // Create label
-        QGraphicsTextItem* text = scene->addText(QString::number(vertexId));
-        text->setPos(x + 10, y + 7);
-        labelItems[vertexId] = text;
         
         updateGraphDisplay();
         nextVertexId++;
@@ -319,14 +331,8 @@ void MainWindow::on_floydButton_clicked() {
 void MainWindow::on_clearButton_clicked() {
     graph.clear();
     
-    // Delete all vertex items
+    // Delete all vertex items (labels are children, so they'll be deleted automatically)
     for (VertexItem* item : vertexItems) {
-        scene->removeItem(item);
-        delete item;
-    }
-    
-    // Delete all label items
-    for (QGraphicsTextItem* item : labelItems) {
         scene->removeItem(item);
         delete item;
     }
@@ -344,7 +350,6 @@ void MainWindow::on_clearButton_clicked() {
     }
     
     vertexItems.clear();
-    labelItems.clear();
     edgeItems.clear();
     edgeLabelItems.clear();
     ui->resultText->clear();
